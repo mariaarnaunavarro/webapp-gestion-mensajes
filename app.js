@@ -6,12 +6,17 @@ const app = express();
 // Puerto dinámico para Railway
 const PORT = process.env.PORT || 3000;
 
-// Conexión a MySQL usando variables de entorno de Railway
+// Cargar variables locales en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
+// Conexión a MySQL usando variables de entorno
 const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
+  host: process.env.MYSQL_HOST || 'localhost',
+  user: process.env.MYSQL_USER || 'root',
+  password: process.env.MYSQL_PASSWORD || '1234',
+  database: process.env.MYSQL_DATABASE || 'mensajesdb',
   port: process.env.MYSQL_PORT || 3306
 });
 
@@ -35,11 +40,9 @@ db.connect(err => {
   }
 });
 
-// Middleware para formularios y archivos estáticos
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Insertar mensaje
 app.post('/enviar', (req, res) => {
   const { nombre, mensaje } = req.body;
   if (!nombre || !mensaje) return res.status(400).send('Faltan campos obligatorios.');
@@ -51,7 +54,6 @@ app.post('/enviar', (req, res) => {
   });
 });
 
-// Mostrar mensajes
 app.get('/mensajes', (req, res) => {
   db.query('SELECT * FROM mensajes ORDER BY fecha DESC', (err, results) => {
     if (err) res.status(500).send('Error al recuperar mensajes.');
@@ -66,5 +68,4 @@ app.get('/mensajes', (req, res) => {
   });
 });
 
-// Iniciar servidor
 app.listen(PORT, () => console.log(`🌐 Servidor escuchando en el puerto ${PORT}`));
