@@ -83,5 +83,3 @@ app.get('/mensajes', async (req, res) => {
     res.status(500).send('Error al recuperar mensajes.');
   }
 });
-
-
