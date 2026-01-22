@@ -75,9 +75,21 @@ app.post('/enviar', (req, res) => {
   });
 });
 
-
 // Mostrar mensajes
 app.get('/mensajes', (req, res) => {
   db.query('SELECT * FROM mensajes ORDER BY fecha DESC', (err, results) => {
     if (err) {
-      res.status(5
+      res.status(500).send('Error al recuperar mensajes.');
+    } else {
+      let html = '<h1>📬 Mensajes recibidos</h1>';
+      html += '<a href="/">Volver</a><hr>';
+      results.forEach(m => {
+        html += `<p><b>${m.nombre}</b>: ${m.mensaje} <br><small>${m.fecha}</small></p><hr>`;
+      });
+      res.send(html);
+    }
+  });
+});
+
+// Iniciar servidor
+app.listen(PORT, () => console.log(`Servidor escuchando en el puerto ${PORT}`));
