@@ -7,35 +7,53 @@ const PORT = process.env.PORT || 3000;
 
 let pool;
 
-async function initDB() {
+async function createPool() {
   pool = mysql.createPool({
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE, // <-- debe existir en MySQL
+    database: process.env.MYSQL_DATABASE,
     port: Number(process.env.MYSQL_PORT),
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
+    queueLimit: 0
   });
 
-  // PROBAR CONEXIÓN
+  // prueba conexión
   const conn = await pool.getConnection();
   conn.release();
-
   console.log('Conectado a MySQL correctamente');
+}
+
+async function ensureDB() {
+  // Si tu base de datos no existe, la creamos (solo si quieres que sea mensajesdb)
+  await pool.query("CREATE DATABASE IF NOT EXISTS mensajesdb");
+  await pool.query("USE mensajesdb");
+
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS mensajes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(50),
+      mensaje TEXT,
+      fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  await pool.query(createTableQuery);
 }
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-initDB()
-  .then(() => {
+(async () => {
+  try {
+    await createPool();
+    await ensureDB();
     app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('Error al conectar con MySQL:', err);
     process.exit(1);
-  });
+  }
+})();
 
 app.post('/enviar', async (req, res) => {
   const { nombre, mensaje } = req.body;
@@ -65,3 +83,5 @@ app.get('/mensajes', async (req, res) => {
     res.status(500).send('Error al recuperar mensajes.');
   }
 });
+
+
