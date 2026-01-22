@@ -75,6 +75,7 @@ app.post('/enviar', (req, res) => {
   });
 });
 
+
 // Mostrar mensajes
 app.get('/mensajes', (req, res) => {
   db.query('SELECT * FROM mensajes ORDER BY fecha DESC', (err, results) => {
