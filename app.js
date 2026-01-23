@@ -12,24 +12,21 @@ async function createPool() {
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
+    database: process.env.MYSQL_DATABASE, // DB que YA creó Railway
     port: Number(process.env.MYSQL_PORT),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
   });
 
-  // prueba conexión
+  // Prueba de conexión
   const conn = await pool.getConnection();
   conn.release();
   console.log('Conectado a MySQL correctamente');
 }
 
 async function ensureDB() {
-  // Si tu base de datos no existe, la creamos (solo si quieres que sea mensajesdb)
-  await pool.query("CREATE DATABASE IF NOT EXISTS mensajesdb");
-  await pool.query("USE mensajesdb");
-
+  // SOLO crear la tabla, NO la base de datos
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS mensajes (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,10 +54,15 @@ app.use(express.static('public'));
 
 app.post('/enviar', async (req, res) => {
   const { nombre, mensaje } = req.body;
-  if (!nombre || !mensaje) return res.status(400).send('Faltan campos obligatorios.');
+  if (!nombre || !mensaje) {
+    return res.status(400).send('Faltan campos obligatorios.');
+  }
 
   try {
-    await pool.query('INSERT INTO mensajes (nombre, mensaje) VALUES (?, ?)', [nombre, mensaje]);
+    await pool.query(
+      'INSERT INTO mensajes (nombre, mensaje) VALUES (?, ?)',
+      [nombre, mensaje]
+    );
     res.redirect('/mensajes.html');
   } catch (err) {
     console.error('Error al insertar:', err);
@@ -70,11 +72,13 @@ app.post('/enviar', async (req, res) => {
 
 app.get('/mensajes', async (req, res) => {
   try {
-    const [results] = await pool.query('SELECT * FROM mensajes ORDER BY fecha DESC');
+    const [results] = await pool.query(
+      'SELECT * FROM mensajes ORDER BY fecha DESC'
+    );
 
     let html = '<h1>📬 Mensajes recibidos</h1><a href="/">Volver</a><hr>';
     results.forEach(m => {
-      html += `<p><b>${m.nombre}</b>: ${m.mensaje} <br><small>${m.fecha}</small></p><hr>`;
+      html += `<p><b>${m.nombre}</b>: ${m.mensaje}<br><small>${m.fecha}</small></p><hr>`;
     });
 
     res.send(html);
